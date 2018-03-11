@@ -133,12 +133,19 @@ int CatsEye_loadJson(CatsEye *this, char *name)
 
 char convolution[] = OCLSTRINGIFY(
 
-kernel void convolution(global float4 *X/*256*256*/, global float4 *W/*3*3*/, int wpos, global float4 *bias, int bpos, int INPUTPLANE/*/4*/)
+kernel void convolution(global float4 *X/*256*256*/, int swap, global float4 *W/*3*3*/, int wpos, global float4 *bias, int bpos, int INPUTPLANE/*/4*/)
 {
 	int gid = get_global_id(0);	// 0 - (256*256-1)
 	int op = get_global_id(1);	// outout plane
 //	global float4 *Z = X +256*256 +gid;
-	global float4 *Z = X +DATA_XSIZE*DATA_YSIZE +gid +256*256*op;
+//	global float4 *Z = X +DATA_XSIZE*DATA_YSIZE +gid +256*256*op;
+	global float4 *Z;
+	if (swap) {
+		Z = X;
+		X += DATA_XSIZE*DATA_YSIZE +gid +256*256*op;
+	} else {
+		Z = X +DATA_XSIZE*DATA_YSIZE +gid +256*256*op;
+	}
 	global float4 *w = W +wpos +INPUTPLANE*3*3*op;
 	global float4 *w2 = w +INPUTPLANE*3*3;
 	global float4 *w3 = w +INPUTPLANE*3*3*2;
@@ -311,9 +318,10 @@ kernel void convolution(global float4 *X/*256*256*/, global float4 *W/*3*3*/, in
 
 );
 float X[4*DATA_XSIZE*DATA_YSIZE*2];
-int wpos, bpos, INPUTPLANE;
+int swap, wpos, bpos, INPUTPLANE;
 args_t args[] = {
 	{ CL_MEM_READ_WRITE, sizeof(float)*4*DATA_XSIZE*DATA_YSIZE*2, 0, X, OCL_WRITE|OCL_READ }, // X
+	{ 0, sizeof(int), 0, &swap, 0 },
 	{ CL_MEM_READ_ONLY, /*sizeof(float)*4*3*3*/0, 0, 0, OCL_WRITE }, // W
 	{ 0, sizeof(int), 0, &wpos, 0 },
 	{ CL_MEM_READ_ONLY, /*sizeof(float)*4*3*3*/0, 0, 0, OCL_WRITE }, // bias
@@ -335,7 +343,7 @@ void *recalloc(void *p, int s, int ss)
 	return r;
 }
 
-//#define DEBUG
+#define DEBUG
 #ifdef DEBUG
 #define debug_s(x)	{x;}
 #else
@@ -345,6 +353,7 @@ void *recalloc(void *p, int s, int ss)
 void result(char *name, int w, int h)
 {
 //	float *d = coReadDataf(w, h, 0);
+	oclKernelArgsRead(args);
 	float *d = X;
 #ifdef DEBUG
 	for (int i=0; i<8/*h*/; i++) {
@@ -363,7 +372,7 @@ void result(char *name, int w, int h)
 	}
 	stbi_write_png(name, w, h, 1, o, 0);
 	free(o);
-	free(d);
+//	free(d);
 }
 
 void waifu2x_ocl_run(CatsEye *cat, float *yuv, uint8_t *s, int sx, int sy, uint8_t *p, int wx)
@@ -386,6 +395,8 @@ void waifu2x_ocl_run(CatsEye *cat, float *yuv, uint8_t *s, int sx, int sy, uint8
 //			yuv[(y*256+x)*4] = 0.299*r +0.587*g +0.114*b;	// CCIR Rec.601
 //			u[y*256+x] = -0.147*r -0.289*g +0.436*b;
 //			v[y*256+x] = 0.615*r -0.515*g -0.100*b;
+
+			X[(y*256+x)*4] = yuv[(y*256+x)*4];
 		}
 	}
 //	debug_s(stbi_write_png("output_256.png", 256, 256, 3, p, 0));
@@ -395,8 +406,9 @@ void waifu2x_ocl_run(CatsEye *cat, float *yuv, uint8_t *s, int sx, int sy, uint8
 //	coBindInputTexture(prog, texture[2], GL_TEXTURE1, "W");
 
 	debug_s(clock_start());
-	int n = 0;
-	int r = 1;
+//	int n = 0;
+//	int r = 1;
+	oclKernelArgsWrite(args);
 	for (int i=0; i<cat->layers; i++) {
 		int a = (cat->u[i].out+3)/4;
 		int w = a>16 ? 16 : a;
@@ -408,9 +420,10 @@ void waifu2x_ocl_run(CatsEye *cat, float *yuv, uint8_t *s, int sx, int sy, uint8
 		wpos = cat->ws[i]/4;
 		kernel[0].global_size[1] = a;
 
-		oclKernelArgsWrite(args);
+//		oclKernelArgsWrite(args);
 		oclRun(&kernel[0]);
-		oclKernelArgsRead(args);
+//		oclKernelArgsRead(args);
+		swap ^= 1;
 
 /*		coUniform1i(prog, "INPUTPLANE", (cat->u[i].in+3)/4);
 		coUniform4fv(prog, "bias", a, &cat->bdata[cat->bs[i]]); coAssert();
@@ -427,6 +440,7 @@ void waifu2x_ocl_run(CatsEye *cat, float *yuv, uint8_t *s, int sx, int sy, uint8
 		result(buff, XSIZE*w, YSIZE*h);
 #endif
 	}
+	oclKernelArgsRead(args);
 	debug_s(clock_end());
 
 //	float *d = coReadDataf(XSIZE, YSIZE, 0);
