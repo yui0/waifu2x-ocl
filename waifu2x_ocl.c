@@ -136,17 +136,15 @@ char convolution[] = OCLSTRINGIFY(
 kernel void convolution(global float4 *X/*256*256*/, int swap, global float4 *W/*3*3*/, int wpos, global float4 *bias, int bpos, int INPUTPLANE/*/4*/)
 {
 	int gid = get_global_id(0);	// 0 - (256*256-1)
-	int op = get_global_id(1);	// outout plane
-//	global float4 *Z = X +256*256 +gid;
-//	global float4 *Z = X +DATA_XSIZE*DATA_YSIZE +gid +256*256*op;
+	int op = get_global_id(1);	// output plane
 	global float4 *Z;
 	if (swap) {
-		Z = X;
-		X += DATA_XSIZE*DATA_YSIZE +gid +256*256*op;
+		Z = X +gid +256*256*op;
+		X += DATA_XSIZE*DATA_YSIZE;
 	} else {
 		Z = X +DATA_XSIZE*DATA_YSIZE +gid +256*256*op;
 	}
-	global float4 *w = W +wpos +INPUTPLANE*3*3*op;
+	global float4 *w = W +wpos +INPUTPLANE*3*3*op*4;
 	global float4 *w2 = w +INPUTPLANE*3*3;
 	global float4 *w3 = w +INPUTPLANE*3*3*2;
 	global float4 *w4 = w +INPUTPLANE*3*3*3;
@@ -354,7 +352,7 @@ void result(char *name, int w, int h)
 {
 //	float *d = coReadDataf(w, h, 0);
 	oclKernelArgsRead(args);
-	float *d = X;
+	float *d = !swap ? X : X +DATA_XSIZE*DATA_YSIZE*4;
 #ifdef DEBUG
 	for (int i=0; i<8/*h*/; i++) {
 		for (int j=0; j<8/*w*/; j++) printf("%2.3f ", d[(i*w+j)*4]);
@@ -501,10 +499,10 @@ int waifu2x_ocl(char *name, char *output, char *model, float scale)
 	cat.wdata = recalloc(cat.wdata, sizeof(numerus)*cat.wsize, sizeof(numerus)*KERNEL_W*KERNEL_H*4); // 256*281
 	cat.bdata = recalloc(cat.bdata, sizeof(numerus)*cat.bsize, sizeof(numerus)*(cat.bsize+3));
 
-	args[1].size = sizeof(numerus)*KERNEL_W*KERNEL_H*4;
-	args[1].s = cat.wdata;
-	args[3].size = sizeof(numerus)*(cat.bsize+3);
-	args[3].s = cat.bdata;
+	args[2].size = sizeof(numerus)*KERNEL_W*KERNEL_H*4;
+	args[2].s = cat.wdata;
+	args[4].size = sizeof(numerus)*(cat.bsize+3);
+	args[4].s = cat.bdata;
 
 	oclSetup(0, 0);
 	oclKernel(kernel, ksz, "-cl-denorms-are-zero -cl-finite-math-only -cl-fast-relaxed-math -Werror", convolution);
