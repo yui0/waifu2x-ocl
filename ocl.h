@@ -81,6 +81,10 @@ void oclSetup(int platform, int device)
 //	command_queue = clCreateCommandQueueWithProperties(context, device_id[device], /*queueProps*/0, &ret);
 //#endif
 
+	size_t max_work_group_size;
+	clGetDeviceInfo(device_id[device], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max_work_group_size), &max_work_group_size, NULL);
+	printf("CL_DEVICE_MAX_WORK_GROUP_SIZE: %lu\n", max_work_group_size);
+
 	cl_ulong maxMemAlloc;
 	clGetDeviceInfo(device_id[device], CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(cl_ulong), &maxMemAlloc, NULL);
 	printf("Maximum memory allocation size is %lu bytes\n", maxMemAlloc);
@@ -166,6 +170,8 @@ void oclRun(ocl_t *kernel)
 
 	size_t *local = kernel->local_size[0] ? kernel->local_size : 0;
 	clEnqueueNDRangeKernel(command_queue, kernel->k, 1, NULL, kernel->global_size, local, 0, NULL, NULL);
+	//printf("clEnqueueNDRangeKernel %zu,%zu\n", kernel->local_size[0], kernel->local_size[1]);
+	//printf("clEnqueueNDRangeKernel %zu,%zu\n", kernel->global_size[0], kernel->global_size[1]);
 	//cl_event e;
 	//clEnqueueNDRangeKernel(command_queue, kernel->k, 1, NULL, kernel->global_size, local, 0, NULL, &e);
 }

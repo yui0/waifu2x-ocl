@@ -135,25 +135,32 @@ char convolution[] = OCLSTRINGIFY(
 
 kernel void convolution(global float4 *X/*256*256*/, int swap, global float4 *W/*3*3*/, int wpos, global float4 *bias, int bpos, int INPUTPLANE/*/4*/)
 {
-	int gid = get_global_id(0);	// 0 - (256*256-1)
-	int op = get_global_id(1);	// output plane
+	int gid = get_global_id(0) * get_global_id(1);	// 0 - (256*256-1)
+	int op = get_global_id(2);	// 0 - (256*256-1)
+
+//	int gid = get_global_id(0);	// 0 - (256*256-1)
+//	int op = get_global_id(1);	// output plane
 	global float4 *Z;
+//	X[DATA_XSIZE*DATA_YSIZE +gid] = X[gid];
 	if (swap) {
 		Z = X +gid +256*256*op;
 		X += DATA_XSIZE*DATA_YSIZE;
 	} else {
 		Z = X +DATA_XSIZE*DATA_YSIZE +gid +256*256*op;
 	}
-	global float4 *w = W +wpos +INPUTPLANE*3*3*op*4;
+	Z[0] = X[gid];
+//	X[DATA_XSIZE*DATA_YSIZE +gid +256*256*2] = X[gid];
+	global float4 *w = W +wpos +INPUTPLANE*3*3*4*op;
+	if (INPUTPLANE==1) w = W +wpos +3*3*op;
 	global float4 *w2 = w +INPUTPLANE*3*3;
 	global float4 *w3 = w +INPUTPLANE*3*3*2;
 	global float4 *w4 = w +INPUTPLANE*3*3*3;
-	bias += bpos;
+	bias += bpos +op;
 
 	float4 p[9];
 	float4 a[9];
 	float4 z = 0;
-	if (INPUTPLANE==1) {
+	for (int i=0; i<INPUTPLANE; i++) {
 		p[0] = X[clamp(gid + -1 + -1*256, 0, 256*256)];
 		p[1] = X[clamp(gid +  0 + -1*256, 0, 256*256)];
 		p[2] = X[clamp(gid +  1 + -1*256, 0, 256*256)];
@@ -163,6 +170,7 @@ kernel void convolution(global float4 *X/*256*256*/, int swap, global float4 *W/
 		p[6] = X[clamp(gid + -1 +  1*256, 0, 256*256)];
 		p[7] = X[clamp(gid +  0 +  1*256, 0, 256*256)];
 		p[8] = X[clamp(gid +  1 +  1*256, 0, 256*256)];
+		X += 256*256;
 
 		a[0] = *w++;
 		a[1] = *w++;
@@ -172,50 +180,13 @@ kernel void convolution(global float4 *X/*256*256*/, int swap, global float4 *W/
 		a[5] = *w++;
 		a[6] = *w++;
 		a[7] = *w++;
-		a[8] = *w;
+		a[8] = *w++;
 
-		z.x += dot((float3)(p[0].x, p[1].x, p[2].x), a[0].xyz);	// out 1
+		z.x += dot((float3)(p[0].x, p[1].x, p[2].x), a[0].xyz);
 		z.x += dot((float3)(p[3].x, p[4].x, p[5].x), (float3)(a[0].w, a[1].x, a[1].y));
 		z.x += dot((float3)(p[6].x, p[7].x, p[8].x), (float3)(a[1].z, a[1].w, a[2].x));
 
-		z.y += dot((float3)(p[0].x, p[1].x, p[2].x), a[2].yzw);	// out 2
-		z.y += dot((float3)(p[3].x, p[4].x, p[5].x), a[3].xyz);
-		z.y += dot((float3)(p[6].x, p[7].x, p[8].x), (float3)(a[3].w, a[4].x, a[4].y));
-
-		z.z += dot((float3)(p[0].x, p[1].x, p[2].x), (float3)(a[4].z, a[4].w, a[5].x));
-		z.z += dot((float3)(p[3].x, p[4].x, p[5].x), a[5].yzw);
-		z.z += dot((float3)(p[6].x, p[7].x, p[8].x), a[6].xyz);
-
-		z.w += dot((float3)(p[0].x, p[1].x, p[2].x), (float3)(a[6].w, a[7].x, a[7].y));
-		z.w += dot((float3)(p[3].x, p[4].x, p[5].x), (float3)(a[7].z, a[7].w, a[8].x));
-		z.w += dot((float3)(p[6].x, p[7].x, p[8].x), a[8].yzw);
-	} else {
-		for (int i=0; i<INPUTPLANE; i++) {
-			p[0] = X[clamp(gid + -1 + -1*256, 0, 256*256)];
-			p[1] = X[clamp(gid +  0 + -1*256, 0, 256*256)];
-			p[2] = X[clamp(gid +  1 + -1*256, 0, 256*256)];
-			p[3] = X[clamp(gid + -1 +  0*256, 0, 256*256)];
-			p[4] = X[/*clamp(gid +  0 +  0*256, 0, 256*256)*/gid];
-			p[5] = X[clamp(gid +  1 +  0*256, 0, 256*256)];
-			p[6] = X[clamp(gid + -1 +  1*256, 0, 256*256)];
-			p[7] = X[clamp(gid +  0 +  1*256, 0, 256*256)];
-			p[8] = X[clamp(gid +  1 +  1*256, 0, 256*256)];
-			X += 256*256;
-
-			a[0] = *w++;
-			a[1] = *w++;
-			a[2] = *w++;
-			a[3] = *w++;
-			a[4] = *w++;
-			a[5] = *w++;
-			a[6] = *w++;
-			a[7] = *w++;
-			a[8] = *w++;
-
-			z.x += dot((float3)(p[0].x, p[1].x, p[2].x), a[0].xyz);
-			z.x += dot((float3)(p[3].x, p[4].x, p[5].x), (float3)(a[0].w, a[1].x, a[1].y));
-			z.x += dot((float3)(p[6].x, p[7].x, p[8].x), (float3)(a[1].z, a[1].w, a[2].x));
-
+		if (INPUTPLANE!=1) {
 			z.x += dot((float3)(p[0].y, p[1].y, p[2].y), a[2].yzw);
 			z.x += dot((float3)(p[3].y, p[4].y, p[5].y), a[3].xyz);
 			z.x += dot((float3)(p[6].y, p[7].y, p[8].y), (float3)(a[3].w, a[4].x, a[4].y));
@@ -241,11 +212,13 @@ kernel void convolution(global float4 *X/*256*256*/, int swap, global float4 *W/
 			z.y += dot((float3)(p[0].x, p[1].x, p[2].x), a[0].xyz);
 			z.y += dot((float3)(p[3].x, p[4].x, p[5].x), (float3)(a[0].w, a[1].x, a[1].y));
 			z.y += dot((float3)(p[6].x, p[7].x, p[8].x), (float3)(a[1].z, a[1].w, a[2].x));
+		}
 
-			z.y += dot((float3)(p[0].y, p[1].y, p[2].y), a[2].yzw);
-			z.y += dot((float3)(p[3].y, p[4].y, p[5].y), a[3].xyz);
-			z.y += dot((float3)(p[6].y, p[7].y, p[8].y), (float3)(a[3].w, a[4].x, a[4].y));
+		z.y += dot((float3)(p[0].y, p[1].y, p[2].y), a[2].yzw);
+		z.y += dot((float3)(p[3].y, p[4].y, p[5].y), a[3].xyz);
+		z.y += dot((float3)(p[6].y, p[7].y, p[8].y), (float3)(a[3].w, a[4].x, a[4].y));
 
+		if (INPUTPLANE!=1) {
 			z.y += dot((float3)(p[0].z, p[1].z, p[2].z), (float3)(a[4].z, a[4].w, a[5].x));
 			z.y += dot((float3)(p[3].z, p[4].z, p[5].z), a[5].yzw);
 			z.y += dot((float3)(p[6].z, p[7].z, p[8].z), a[6].xyz);
@@ -271,11 +244,13 @@ kernel void convolution(global float4 *X/*256*256*/, int swap, global float4 *W/
 			z.z += dot((float3)(p[0].y, p[1].y, p[2].y), a[2].yzw);
 			z.z += dot((float3)(p[3].y, p[4].y, p[5].y), a[3].xyz);
 			z.z += dot((float3)(p[6].y, p[7].y, p[8].y), (float3)(a[3].w, a[4].x, a[4].y));
+		}
 
-			z.z += dot((float3)(p[0].z, p[1].z, p[2].z), (float3)(a[4].z, a[4].w, a[5].x));
-			z.z += dot((float3)(p[3].z, p[4].z, p[5].z), a[5].yzw);
-			z.z += dot((float3)(p[6].z, p[7].z, p[8].z), a[6].xyz);
+		z.z += dot((float3)(p[0].z, p[1].z, p[2].z), (float3)(a[4].z, a[4].w, a[5].x));
+		z.z += dot((float3)(p[3].z, p[4].z, p[5].z), a[5].yzw);
+		z.z += dot((float3)(p[6].z, p[7].z, p[8].z), a[6].xyz);
 
+		if (INPUTPLANE!=1) {
 			z.z += dot((float3)(p[0].w, p[1].w, p[2].w), (float3)(a[6].w, a[7].x, a[7].y));
 			z.z += dot((float3)(p[3].w, p[4].w, p[5].w), (float3)(a[7].z, a[7].w, a[8].x));
 			z.z += dot((float3)(p[6].w, p[7].w, p[8].w), a[8].yzw);
@@ -301,26 +276,47 @@ kernel void convolution(global float4 *X/*256*256*/, int swap, global float4 *W/
 			z.w += dot((float3)(p[0].z, p[1].z, p[2].z), (float3)(a[4].z, a[4].w, a[5].x));
 			z.w += dot((float3)(p[3].z, p[4].z, p[5].z), a[5].yzw);
 			z.w += dot((float3)(p[6].z, p[7].z, p[8].z), a[6].xyz);
-
-			z.w += dot((float3)(p[0].w, p[1].w, p[2].w), (float3)(a[6].w, a[7].x, a[7].y));
-			z.w += dot((float3)(p[3].w, p[4].w, p[5].w), (float3)(a[7].z, a[7].w, a[8].x));
-			z.w += dot((float3)(p[6].w, p[7].w, p[8].w), a[8].yzw);
 		}
+
+		z.w += dot((float3)(p[0].w, p[1].w, p[2].w), (float3)(a[6].w, a[7].x, a[7].y));
+		z.w += dot((float3)(p[3].w, p[4].w, p[5].w), (float3)(a[7].z, a[7].w, a[8].x));
+		z.w += dot((float3)(p[6].w, p[7].w, p[8].w), a[8].yzw);
 	}
 
 	// Leaky ReLU
-	z += bias[op];
+	z += *bias;
 	z = max(z, 0.0) + min(z, 0.0) * 0.1;
-	Z[0] = z;
+//	*Z = z;
+
+//	*Z = p[4];
+//	*Z = X[gid];
 }
 
 );
+/*float y[4*3*3] = {
+	0,    0.125, 0,
+	0.125, -0.5, 0.125,
+	0,    0.125, 0,
+
+	0,    0.125, 0,
+	0.125, -0.5, 0.125,
+	0,    0.125, 0,
+
+	0,    0.125, 0,
+	0.125, -0.5, 0.125,
+	0,    0.125, 0,
+
+	0,    0.125, 0,
+	0.125, -0.5, 0.125,
+	0,    0.125, 0,
+};*/
 float X[4*DATA_XSIZE*DATA_YSIZE*2];
 int swap, wpos, bpos, INPUTPLANE;
 args_t args[] = {
 	{ CL_MEM_READ_WRITE, sizeof(float)*4*DATA_XSIZE*DATA_YSIZE*2, 0, X, OCL_WRITE|OCL_READ }, // X
 	{ 0, sizeof(int), 0, &swap, 0 },
 	{ CL_MEM_READ_ONLY, /*sizeof(float)*4*3*3*/0, 0, 0, OCL_WRITE }, // W
+//	{ CL_MEM_READ_ONLY, sizeof(float)*4*3*3, 0, y, OCL_WRITE }, // W
 	{ 0, sizeof(int), 0, &wpos, 0 },
 	{ CL_MEM_READ_ONLY, /*sizeof(float)*4*3*3*/0, 0, 0, OCL_WRITE }, // bias
 	{ 0, sizeof(int), 0, &bpos, 0 },
@@ -328,7 +324,10 @@ args_t args[] = {
 	{ 0, 0, 0, 0, 0 },
 };
 ocl_t kernel[] = {
-	{ "convolution", 0, {256*256,0/*output plane*/,0,},{0,0,0,}, args },
+	{ "convolution", 0, {256,256,/*output plane*/0,},{1,1,1,}, args },
+//	{ "convolution", 0, {256/32,256,/*output plane*/0,},{32,1,0,}, args },
+//	{ "convolution", 0, {256*256,0/*output plane*/,0,},{0,0,0,}, args },
+//	{ "convolution", 0, {0/*output plane*/,0,0,},{256,256,0,}, args },
 };
 int ksz = sizeof(kernel)/sizeof(kernel[0]);
 
@@ -404,8 +403,6 @@ void waifu2x_ocl_run(CatsEye *cat, float *yuv, uint8_t *s, int sx, int sy, uint8
 //	coBindInputTexture(prog, texture[2], GL_TEXTURE1, "W");
 
 	debug_s(clock_start());
-//	int n = 0;
-//	int r = 1;
 	oclKernelArgsWrite(args);
 	for (int i=0; i<cat->layers; i++) {
 		int a = (cat->u[i].out+3)/4;
@@ -416,22 +413,12 @@ void waifu2x_ocl_run(CatsEye *cat, float *yuv, uint8_t *s, int sx, int sy, uint8
 		INPUTPLANE = (cat->u[i].in+3)/4;
 		bpos = cat->bs[i]/4;
 		wpos = cat->ws[i]/4;
-		kernel[0].global_size[1] = a;
+		kernel[0].global_size[2] = a;
 
 //		oclKernelArgsWrite(args);
 		oclRun(&kernel[0]);
 //		oclKernelArgsRead(args);
 		swap ^= 1;
-
-/*		coUniform1i(prog, "INPUTPLANE", (cat->u[i].in+3)/4);
-		coUniform4fv(prog, "bias", a, &cat->bdata[cat->bs[i]]); coAssert();
-		coUniform2f(prog, "uvpos", (float)XSIZE*w/DATA_XSIZE, (float)YSIZE*h/DATA_YSIZE);
-		coUniform1f(prog, "wpos", (float)cat->ws[i]/4);
-		coBindInputTexture(prog, texture[n], GL_TEXTURE0, "X");
-		coBindOutputTexture(XSIZE*w, YSIZE*h, texture[r]);
-		coCompute();
-		n ^= 1;	// swap
-		r ^= 1;*/
 #ifdef DEBUG
 		char buff[256];
 		sprintf(buff, "output2x_%02d.png", i+1);
