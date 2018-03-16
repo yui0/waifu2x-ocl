@@ -138,11 +138,6 @@ kernel void convolution(global float4 *X/*256*256*/, int swap, global float4 *W/
 	int gid = get_global_id(0) +get_global_id(1)*256; // 0 - (256*256-1)
 	int op = get_global_id(2); // output plane
 
-	//X[gid] = get_global_id(0)/256.0;
-//	X[gid +op*256*256] = gid/(256.0*256.0);
-	//X[DATA_XSIZE*DATA_YSIZE +gid +op*256*256] = get_global_id(0)/256.0;
-//	X[DATA_XSIZE*DATA_YSIZE +gid +op*256*256] = gid/(256.0*256.0);
-
 	global float4 *Z;
 	if (swap) {
 		Z = X +gid +256*256*op;
@@ -151,9 +146,7 @@ kernel void convolution(global float4 *X/*256*256*/, int swap, global float4 *W/
 		Z = X +DATA_XSIZE*DATA_YSIZE +gid +256*256*op;
 	}
 	//Z[0] = gid/(256.0*256.0);
-//	Z[0] = get_global_id(0)/256.0;
-//	Z[0] = X[gid];
-//	X[DATA_XSIZE*DATA_YSIZE +gid +256*256*2] = X[gid];
+
 	global float4 *w = W +wpos +INPUTPLANE*3*3*4*op;
 	if (INPUTPLANE==1) w = W +wpos +3*3*op;
 	global float4 *w2 = w +INPUTPLANE*3*3;
@@ -320,7 +313,7 @@ void *recalloc(void *p, int s, int ss)
 	return r;
 }
 
-#define DEBUG
+//#define DEBUG
 #ifdef DEBUG
 #define debug_s(x)	{x;}
 #else
@@ -382,9 +375,6 @@ void waifu2x_ocl_run(CatsEye *cat, float *yuv, uint8_t *s, int sx, int sy, uint8
 //	debug_s(stbi_write_png("output_256.png", 256, 256, 3, p, 0));
 //	debug_s(stbi_write_png("output_y.png", 256, 256, 1, yuv, 0));
 
-//	coTransferData(texture[0], 0, 0, XSIZE, YSIZE, GL_FLOAT, yuv);
-//	coBindInputTexture(prog, texture[2], GL_TEXTURE1, "W");
-
 	debug_s(clock_start());
 	oclKernelArgsWrite(args);
 	swap = 0;
@@ -399,9 +389,7 @@ void waifu2x_ocl_run(CatsEye *cat, float *yuv, uint8_t *s, int sx, int sy, uint8
 		wpos = cat->ws[i]/4;
 		kernel[0].global_size[2] = a;
 
-//		oclKernelArgsWrite(args);
 		oclRun(&kernel[0]);
-//		oclKernelArgsRead(args);
 		swap ^= 1;
 #ifdef DEBUG
 		char buff[256];
