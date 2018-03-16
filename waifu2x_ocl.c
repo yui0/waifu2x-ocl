@@ -320,7 +320,7 @@ void *recalloc(void *p, int s, int ss)
 	return r;
 }
 
-//#define DEBUG
+#define DEBUG
 #ifdef DEBUG
 #define debug_s(x)	{x;}
 #else
@@ -411,8 +411,8 @@ void waifu2x_ocl_run(CatsEye *cat, float *yuv, uint8_t *s, int sx, int sy, uint8
 	oclKernelArgsRead(args);
 	debug_s(clock_end());
 
-//	float *d = coReadDataf(XSIZE, YSIZE, 0);
-	float *d = X;
+//	float *d = X;
+	float *d = !swap ? X : X +DATA_XSIZE*DATA_YSIZE*4;
 	for (int y=8; y<YSIZE-8; y++) {
 		for (int x=8; x<XSIZE-8; x++) {
 	//for (int y=0; y<YSIZE; y++) {
@@ -434,7 +434,6 @@ void waifu2x_ocl_run(CatsEye *cat, float *yuv, uint8_t *s, int sx, int sy, uint8
 //			p[(y*XSIZE+x)*3+2] = 256*(yy +2.032*u[y*256+x]);
 		}
 	}
-//	free(d);
 }
 
 int waifu2x_ocl(char *name, char *output, char *model, float scale)
@@ -480,7 +479,7 @@ int waifu2x_ocl(char *name, char *output, char *model, float scale)
 
 	float *yuv = calloc(256*256*(4+2), sizeof(float));
 //	uint8_t *o = calloc(XSIZE*YSIZE, 3);
-//	waifu2x_ocl_run(&cat, prog, texture, yuv, pix, sx, sy, o, 256);
+//	waifu2x_ocl_run(&cat, yuv, pix, sx, sy, o, 256);
 //	stbi_write_png("output2x.png", XSIZE, YSIZE, 3, o, 0);
 	printf("%d %d -> %d %d *%f\n", w, h, sx, sy, scale);
 	uint8_t *o = calloc(sx*sy, 3);
@@ -493,7 +492,6 @@ int waifu2x_ocl(char *name, char *output, char *model, float scale)
 		}
 	}
 //	stbi_write_png(output, sx, sy, 3, o, 0);
-//	free(o);
 	free(yuv);
 	free(pix);
 
