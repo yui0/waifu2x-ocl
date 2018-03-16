@@ -135,27 +135,23 @@ char convolution[] = OCLSTRINGIFY(
 
 kernel void convolution(global float4 *X/*256*256*/, int swap, global float4 *W/*3*3*/, int wpos, global float4 *bias, int bpos, int INPUTPLANE/*/4*/)
 {
-	int gid = get_global_id(0) +get_global_id(1)*256;	// 0 - (256*256-1)
-	int op = get_global_id(2);	// 0 - (256*256-1)
+	int gid = get_global_id(0) +get_global_id(1)*256; // 0 - (256*256-1)
+	int op = get_global_id(2); // output plane
 
 	//X[gid] = get_global_id(0)/256.0;
 //	X[gid +op*256*256] = gid/(256.0*256.0);
 	//X[DATA_XSIZE*DATA_YSIZE +gid +op*256*256] = get_global_id(0)/256.0;
 //	X[DATA_XSIZE*DATA_YSIZE +gid +op*256*256] = gid/(256.0*256.0);
-	//X[DATA_XSIZE*DATA_YSIZE +gid] = get_global_id(2)*1000+get_global_id(1);
 
-//	int gid = get_global_id(0);	// 0 - (256*256-1)
-//	int op = get_global_id(1);	// output plane
 	global float4 *Z;
-//	X[DATA_XSIZE*DATA_YSIZE +gid] = X[gid];
-	//X += 256*256*op;
 	if (swap) {
 		Z = X +gid +256*256*op;
 		X += DATA_XSIZE*DATA_YSIZE;
 	} else {
 		Z = X +DATA_XSIZE*DATA_YSIZE +gid +256*256*op;
 	}
-	Z[0] = gid/(256.0*256.0);
+	//Z[0] = gid/(256.0*256.0);
+//	Z[0] = get_global_id(0)/256.0;
 //	Z[0] = X[gid];
 //	X[DATA_XSIZE*DATA_YSIZE +gid +256*256*2] = X[gid];
 	global float4 *w = W +wpos +INPUTPLANE*3*3*4*op;
@@ -294,37 +290,16 @@ kernel void convolution(global float4 *X/*256*256*/, int swap, global float4 *W/
 	// Leaky ReLU
 	z += *bias;
 	z = max(z, 0.0) + min(z, 0.0) * 0.1;
-//	*Z = z;
-
-//	*Z = p[4];
-//	*Z = X[gid];
+	*Z = z;
 }
 
 );
-/*float y[4*3*3] = {
-	0,    0.125, 0,
-	0.125, -0.5, 0.125,
-	0,    0.125, 0,
-
-	0,    0.125, 0,
-	0.125, -0.5, 0.125,
-	0,    0.125, 0,
-
-	0,    0.125, 0,
-	0.125, -0.5, 0.125,
-	0,    0.125, 0,
-
-	0,    0.125, 0,
-	0.125, -0.5, 0.125,
-	0,    0.125, 0,
-};*/
 float X[4*DATA_XSIZE*DATA_YSIZE*2];
 int swap, wpos, bpos, INPUTPLANE;
 args_t args[] = {
 	{ CL_MEM_READ_WRITE|CL_MEM_ALLOC_HOST_PTR, sizeof(float)*4*DATA_XSIZE*DATA_YSIZE*2, 0, X, OCL_WRITE|OCL_READ }, // X
 	{ 0, sizeof(int), 0, &swap, 0 },
 	{ CL_MEM_READ_ONLY|CL_MEM_ALLOC_HOST_PTR, /*sizeof(float)*4*3*3*/0, 0, 0, OCL_WRITE }, // W
-//	{ CL_MEM_READ_ONLY, sizeof(float)*4*3*3, 0, y, OCL_WRITE }, // W
 	{ 0, sizeof(int), 0, &wpos, 0 },
 	{ CL_MEM_READ_ONLY|CL_MEM_ALLOC_HOST_PTR, /*sizeof(float)*4*3*3*/0, 0, 0, OCL_WRITE }, // bias
 	{ 0, sizeof(int), 0, &bpos, 0 },
@@ -333,9 +308,6 @@ args_t args[] = {
 };
 ocl_t kernel[] = {
 	{ "convolution", 0, 3, {256,256,/*output plane*/1,},{1,1,1,}, args },
-//	{ "convolution", 0, {256/32,256,/*output plane*/0,},{32,1,0,}, args },
-//	{ "convolution", 0, {256*256,0/*output plane*/,0,},{0,0,0,}, args },
-//	{ "convolution", 0, {0/*output plane*/,0,0,},{256,256,0,}, args },
 };
 int ksz = sizeof(kernel)/sizeof(kernel[0]);
 
@@ -373,7 +345,7 @@ void result(char *name, int w, int h)
 		for (int x=0; x<w; x++) {
 //			o[y*w+x] = d[(y*w+x)*4]*256;
 			//o[y*w+x] = d[(y*w+x)*4+1]*256;
-			o[y*w+x] = d[(y/256*w/256+x/256)*256*256 +(y%256*256+x%256)]*256;
+			o[y*w+x] = d[((y/256*w/256+x/256)*256*256 +(y%256*256+x%256))*4]*256;
 		}
 	}
 	stbi_write_png(name, w, h, 1, o, 0);
