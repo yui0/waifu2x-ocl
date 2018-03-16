@@ -35,6 +35,7 @@ typedef struct {
 typedef struct {
 	char *f;
 	cl_kernel k;
+	int dim;
 	size_t global_size[3];
 	size_t local_size[3];
 	args_t *a;
@@ -169,9 +170,9 @@ void oclRun(ocl_t *kernel)
 	}
 
 	size_t *local = kernel->local_size[0] ? kernel->local_size : 0;
-	clEnqueueNDRangeKernel(command_queue, kernel->k, 1, NULL, kernel->global_size, local, 0, NULL, NULL);
+	clEnqueueNDRangeKernel(command_queue, kernel->k, kernel->dim, NULL, kernel->global_size, local, 0, NULL, NULL);
 	//printf("clEnqueueNDRangeKernel %zu,%zu\n", kernel->local_size[0], kernel->local_size[1]);
-	//printf("clEnqueueNDRangeKernel %zu,%zu\n", kernel->global_size[0], kernel->global_size[1]);
+	printf("clEnqueueNDRangeKernel %zu,%zu,%zu\n", kernel->global_size[0], kernel->global_size[1], kernel->global_size[2]);
 	//cl_event e;
 	//clEnqueueNDRangeKernel(command_queue, kernel->k, 1, NULL, kernel->global_size, local, 0, NULL, &e);
 }
