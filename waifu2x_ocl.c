@@ -387,6 +387,7 @@ void waifu2x_ocl_run(CatsEye *cat, float *yuv, uint8_t *s, int sx, int sy, uint8
 
 	debug_s(clock_start());
 	oclKernelArgsWrite(args);
+	swap = 0;
 	for (int i=0; i<cat->layers; i++) {
 		int a = (cat->u[i].out+3)/4;
 		int w = a>16 ? 16 : a;
@@ -411,7 +412,6 @@ void waifu2x_ocl_run(CatsEye *cat, float *yuv, uint8_t *s, int sx, int sy, uint8
 	oclKernelArgsRead(args);
 	debug_s(clock_end());
 
-//	float *d = X;
 	float *d = !swap ? X : X +DATA_XSIZE*DATA_YSIZE*4;
 	for (int y=8; y<YSIZE-8; y++) {
 		for (int x=8; x<XSIZE-8; x++) {
