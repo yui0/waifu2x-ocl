@@ -320,7 +320,7 @@ void *recalloc(void *p, int s, int ss)
 	return r;
 }
 
-#define DEBUG
+//#define DEBUG
 #ifdef DEBUG
 #define debug_s(x)	{x;}
 #else
@@ -373,7 +373,10 @@ void waifu2x_ocl_run(CatsEye *cat, float *yuv, uint8_t *s, int sx, int sy, uint8
 //			u[y*256+x] = -0.147*r -0.289*g +0.436*b;
 //			v[y*256+x] = 0.615*r -0.515*g -0.100*b;
 
-			X[(y*256+x)*4] = yuv[(y*256+x)*4];
+			X[(y*256+x)*4  ] = yuv[(y*256+x)*4];
+			X[(y*256+x)*4+1] = yuv[(y*256+x)*4];
+			X[(y*256+x)*4+2] = yuv[(y*256+x)*4];
+			X[(y*256+x)*4+3] = yuv[(y*256+x)*4];
 		}
 	}
 //	debug_s(stbi_write_png("output_256.png", 256, 256, 3, p, 0));
