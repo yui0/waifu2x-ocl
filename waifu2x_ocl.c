@@ -282,7 +282,7 @@ kernel void convolution(global float4 *X/*256*256*/, int swap, global float4 *W/
 
 	// Leaky ReLU
 	z += *bias;
-	z = max(z, 0.0) + min(z, 0.0) * 0.1;
+	z = (float4)max(z, (float4)0.0) + (float4)min(z, (float4)0.0) * (float4)0.1;
 	*Z = z;
 }
 
@@ -300,7 +300,7 @@ args_t args[] = {
 	{ 0, 0, 0, 0, 0 },
 };
 ocl_t kernel[] = {
-	{ "convolution", 0, 3, {256,256,/*output plane*/1,},{1,1,1,}, args },
+	{ "convolution", 0, 3/*dim*/,{256,256,/*output plane*/1,},{1,1,1,}, args },
 };
 int ksz = sizeof(kernel)/sizeof(kernel[0]);
 
@@ -464,6 +464,10 @@ int waifu2x_ocl(char *name, char *output, char *model, float scale)
 	oclSetup(0, 0);
 	oclKernel(kernel, ksz, "-cl-denorms-are-zero -cl-finite-math-only -cl-fast-relaxed-math -Werror", convolution);
 	oclKernelArgs(kernel, ksz);
+
+//#ifndef DEBUG
+//	args[0].size = sizeof(float)*4*256*256; // for speed up
+//#endif
 
 	float *yuv = calloc(256*256*(4+2), sizeof(float));
 //	uint8_t *o = calloc(XSIZE*YSIZE, 3);
