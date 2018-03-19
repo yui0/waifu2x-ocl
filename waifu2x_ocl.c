@@ -7,6 +7,14 @@
 // clang -Os waifu2x_ocl.c -o waifu2x_ocl `pkg-config --libs --cflags OpenCL`
 #include <stdlib.h>
 #include <stdint.h>
+
+//#define DEBUG
+#ifdef DEBUG
+#define debug_s(x)	{x;}
+#else
+#define debug_s(x)
+#endif
+
 #include "ocl.h"
 #include "clock.h"
 
@@ -133,7 +141,7 @@ int CatsEye_loadJson(CatsEye *this, char *name)
 
 char convolution[] = OCLSTRINGIFY(
 
-kernel void convolution(global float4 *X/*256*256*/, int swap, global float4 *W/*3*3*/, int wpos, global float4 *bias, int bpos, int INPUTPLANE/*/4*/)
+kernel void convolution(global float4 *X/*256*256*/, int swap, global const float4 *W/*3*3*/, int wpos, global const float4 *bias, int bpos, int INPUTPLANE/*/4*/)
 {
 	int gid = get_global_id(0) +get_global_id(1)*256; // 0 - (256*256-1)
 	int op = get_global_id(2); // output plane
@@ -312,13 +320,6 @@ void *recalloc(void *p, int s, int ss)
 	free(p);
 	return r;
 }
-
-//#define DEBUG
-#ifdef DEBUG
-#define debug_s(x)	{x;}
-#else
-#define debug_s(x)
-#endif
 
 void result(char *name, int w, int h)
 {
