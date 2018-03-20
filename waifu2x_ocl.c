@@ -141,25 +141,25 @@ int CatsEye_loadJson(CatsEye *this, char *name)
 
 char convolution[] = OCLSTRINGIFY(
 
-kernel void convolution(global float4 *X/*256*256*/, int swap, global const float4 *W/*3*3*/, int wpos, global const float4 *bias, int bpos, int INPUTPLANE/*/4*/)
+kernel void convolution(global float4 *X/*256*256*/, int swap, constant float4 *W/*3*3*/, int wpos, constant float4 *bias, int bpos, int INPUTPLANE/*/4*/)
 {
-	int gid = get_global_id(0) +get_global_id(1)*256; // 0 - (256*256-1)
+	int gid = get_global_id(0) +get_global_id(1)*XSIZE; // 0 - (256*256-1)
 	int op = get_global_id(2); // output plane
 
 	global float4 *Z;
 	if (swap) {
-		Z = X +gid +256*256*op;
+		Z = X +gid +XSIZE*YSIZE*op;
 		X += DATA_XSIZE*DATA_YSIZE;
 	} else {
-		Z = X +DATA_XSIZE*DATA_YSIZE +gid +256*256*op;
+		Z = X +DATA_XSIZE*DATA_YSIZE +gid +XSIZE*YSIZE*op;
 	}
 	//Z[0] = gid/(256.0*256.0);
 
-	global float4 *w = W +wpos +INPUTPLANE*3*3*4*op;
+	constant float4 *w = W +wpos +INPUTPLANE*3*3*4*op;
 	if (INPUTPLANE==1) w = W +wpos +3*3*op;
-	global float4 *w2 = w +INPUTPLANE*3*3;
-	global float4 *w3 = w +INPUTPLANE*3*3*2;
-	global float4 *w4 = w +INPUTPLANE*3*3*3;
+	constant float4 *w2 = w +INPUTPLANE*3*3;
+	constant float4 *w3 = w +INPUTPLANE*3*3*2;
+	constant float4 *w4 = w +INPUTPLANE*3*3*3;
 	bias += bpos +op;
 
 	float4 p[9];
