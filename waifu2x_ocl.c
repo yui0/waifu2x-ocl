@@ -164,7 +164,7 @@ kernel void convolution(global float4 *X/*256*256*/, int swap, constant float4 *
 
 	float4 p[9];
 	float4 a[9];
-	float4 z = 0;
+	float4 z = *bias;
 	for (int i=0; i<INPUTPLANE; i++) {
 		p[0] = X[clamp(gid + -1 + -1*256, 0, 256*256)];
 		p[1] = X[clamp(gid +  0 + -1*256, 0, 256*256)];
@@ -289,7 +289,7 @@ kernel void convolution(global float4 *X/*256*256*/, int swap, constant float4 *
 	}
 
 	// Leaky ReLU
-	z += *bias;
+//	z += *bias;
 	z = (float4)max(z, (float4)0.0) + (float4)min(z, (float4)0.0) * (float4)0.1;
 	*Z = z;
 }
@@ -308,7 +308,8 @@ args_t args[] = {
 	{ 0, 0, 0, 0, 0 },
 };
 ocl_t kernel[] = {
-	{ "convolution", 0, 3/*dim*/,{256,256,/*output plane*/1,},{1,1,1,}, args },
+	{ "convolution", 0, 3/*dim*/,{256,256,/*output plane*/1,},{128,1,1,}, args },
+//	{ "convolution", 0, 3/*dim*/,{1,1,/*output plane*/1,},{256,256,1,}, args },
 };
 int ksz = sizeof(kernel)/sizeof(kernel[0]);
 
