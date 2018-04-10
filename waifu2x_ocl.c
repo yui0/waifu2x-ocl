@@ -43,26 +43,26 @@ typedef struct {
 	int stride;
 } CatsEye_Layer;
 
-#define numerus		float
+#define real		float
 typedef struct {
 	// number of each layer
 	int layers;
 	CatsEye_Layer *u;
 
 	// input layers
-	numerus *xdata;
+	real *xdata;
 	int xsize;
 	// output layers [o = f(z)]
-	numerus **z, **o, *odata;
+	real **z, **o, *odata;
 	int osize;
 	// error value
-	numerus **d, *ddata;
+	real **d, *ddata;
 	int dsize;
 	// weights
-	numerus **w, *wdata;
+	real **w, *wdata;
 	int *ws, wsize;
 	// bias
-	numerus **b, *bdata;
+	real **b, *bdata;
 	int *bs, bsize;
 } CatsEye;
 
@@ -74,9 +74,9 @@ int CatsEye_loadJson(CatsEye *this, char *name)
 
 	this->layers = json_array_get_count(a);
 	this->u = malloc(sizeof(CatsEye_Layer)*this->layers);
-	this->b = malloc(sizeof(numerus*)*this->layers);
+	this->b = malloc(sizeof(real*)*this->layers);
 	this->bs = malloc(sizeof(int)*this->layers);
-	this->w = malloc(sizeof(numerus*)*this->layers);
+	this->w = malloc(sizeof(real*)*this->layers);
 	this->ws = malloc(sizeof(int)*this->layers);
 
 	this->bsize = 0;
@@ -85,7 +85,7 @@ int CatsEye_loadJson(CatsEye *this, char *name)
 		this->bs[i] = this->bsize;
 		this->bsize += json_object_get_number(o, "nOutputPlane");
 	}
-	this->bdata = malloc(sizeof(numerus)*this->bsize);
+	this->bdata = malloc(sizeof(real)*this->bsize);
 	for (int i=0; i<this->layers; i++) {
 		JSON_Object *o = json_array_get_object(a, i);
 		JSON_Array *aa = json_object_get_array(o, "bias");
@@ -101,7 +101,7 @@ int CatsEye_loadJson(CatsEye *this, char *name)
 		this->wsize += json_object_get_number(o, "nInputPlane")*json_object_get_number(o, "nOutputPlane")
 			*json_object_get_number(o, "kW")*json_object_get_number(o, "kH");
 	}
-	this->wdata = malloc(sizeof(numerus)*this->wsize);
+	this->wdata = malloc(sizeof(real)*this->wsize);
 	for (int i=0; i<this->layers; i++) {
 		JSON_Object *o = json_array_get_object(a, i);
 		JSON_Array *aa = json_object_get_array(o, "weight");
@@ -145,6 +145,8 @@ kernel void convolution(global float4 *X/*256*256*/, int swap, constant float4 *
 {
 	int gid = get_global_id(0) +get_global_id(1)*XSIZE; // 0 - (256*256-1)
 	int op = get_global_id(2); // output plane
+//	if (gid>65535) return;
+//	if (op>32) return;
 
 	global float4 *Z;
 	if (swap) {
@@ -308,8 +310,8 @@ args_t args[] = {
 	{ 0, 0, 0, 0, 0 },
 };
 ocl_t kernel[] = {
+//	{ "convolution", 0, 3/*dim*/,{256,256,/*output plane*/1,},{1,1,1,}, args },
 	{ "convolution", 0, 3/*dim*/,{256,256,/*output plane*/1,},{128,1,1,}, args },
-//	{ "convolution", 0, 3/*dim*/,{1,1,/*output plane*/1,},{256,256,1,}, args },
 };
 int ksz = sizeof(kernel)/sizeof(kernel[0]);
 
@@ -455,12 +457,12 @@ int waifu2x_ocl(char *name, char *output, char *model, float scale)
 
 	CatsEye cat;
 	assert(!CatsEye_loadJson(&cat, model));
-	cat.wdata = recalloc(cat.wdata, sizeof(numerus)*cat.wsize, sizeof(numerus)*KERNEL_W*KERNEL_H*4); // 256*281
-	cat.bdata = recalloc(cat.bdata, sizeof(numerus)*cat.bsize, sizeof(numerus)*(cat.bsize+3));
+	cat.wdata = recalloc(cat.wdata, sizeof(real)*cat.wsize, sizeof(real)*KERNEL_W*KERNEL_H*4); // 256*281
+	cat.bdata = recalloc(cat.bdata, sizeof(real)*cat.bsize, sizeof(real)*(cat.bsize+3));
 
-	args[2].size = sizeof(numerus)*KERNEL_W*KERNEL_H*4;
+	args[2].size = sizeof(real)*KERNEL_W*KERNEL_H*4;
 	args[2].s = cat.wdata;
-	args[4].size = sizeof(numerus)*(cat.bsize+3);
+	args[4].size = sizeof(real)*(cat.bsize+3);
 	args[4].s = cat.bdata;
 
 	oclSetup(0, 0);

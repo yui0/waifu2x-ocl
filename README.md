@@ -70,11 +70,8 @@ $ ./waifu2x_ocl -m vgg_7/art_y/noise3_model.json nyanko.jpg
   - https://github.com/ueshita/waifu2x-converter-glsl
   - https://stanko.github.io/super-resolution-image-resizer
   - https://www.slideshare.net/KosukeNakago/seranet
-- GLSL
-  - https://github.com/transcranial/keras-js/tree/master/src/webgl
-  - https://github.com/scienceai/neocortex/blob/master/src/lib/webgl/matmul_fragment_shader.glsl
-  - https://tenso.rs/demos/fast-neural-style/
+- OpenCL
+  - https://developer.amd.com/wordpress/media/2012/10/Optimizations-ImageConvolution1.pdf
 - Picture
   - Nyanko: https://www.illust-box.jp/member/view/7263/
   - Nyanko: http://www.poipoi.com/yakko/cgi-bin/sb/log/eid5173.html#more-5173
-- [OpenGL on Mac](http://asa-no-blog.hatenablog.com/entry/2017/08/26/235737)
