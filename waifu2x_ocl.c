@@ -456,7 +456,8 @@ int waifu2x_ocl(char *name, char *output, char *model, float scale)
 	pix = pixels;
 
 	CatsEye cat;
-	assert(!CatsEye_loadJson(&cat, model));
+	int r = CatsEye_loadJson(&cat, model);
+	assert(!r);
 	cat.wdata = recalloc(cat.wdata, sizeof(real)*cat.wsize, sizeof(real)*KERNEL_W*KERNEL_H*4); // 256*281
 	cat.bdata = recalloc(cat.bdata, sizeof(real)*cat.bsize, sizeof(real)*(cat.bsize+3));
 
@@ -512,7 +513,7 @@ int waifu2x_ocl(char *name, char *output, char *model, float scale)
 	return 0;
 }
 
-void usage(FILE* fp, int argc, char** argv)
+void usage(FILE* fp, char** argv)
 {
 	fprintf(fp,
 		"Usage: %s [options] file\n\n"
@@ -527,7 +528,7 @@ void usage(FILE* fp, int argc, char** argv)
 
 int main(int argc, char* argv[])
 {
-	char *name;
+	char *name = 0;
 	char *model = "noise1_model.json";
 	char *output = "output2x.png";
 	float scale = 2.0;
@@ -551,9 +552,13 @@ int main(int argc, char* argv[])
 			break;
 		case 'h':
 		default:
-			usage(stderr, argc, argv);
+			usage(stderr, argv);
 			return 1;
 		}
+	}
+	if (!name) {
+		usage(stderr, argv);
+		return 1;
 	}
 	waifu2x_ocl(name, output, model, scale);
 
