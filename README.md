@@ -47,22 +47,12 @@ Maximum memory allocation size is 2254046412 bytes
 159 157
 ```
 
-## How to work
-
-![01.Nyanko](nyanko_01.png "01")
-![02.Nyanko](nyanko_02.png "02")
-![03.Nyanko](nyanko_03.png "03")
-![04.Nyanko](nyanko_04.png "04")
-![05.Nyanko](nyanko_05.png "05")
-![06.Nyanko](nyanko_06.png "06")
-![07.Nyanko](nyanko_07.png "07")
-
 ## Demo
 
 ### Original
 ![Original](waifu_s.jpg)
 
-### Normal Resize
+### Normal Resize by Gimp
 ![Normal](waifu_d.jpg)
 
 ### Waifu2x Resize
