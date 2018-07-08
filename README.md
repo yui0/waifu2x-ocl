@@ -35,6 +35,16 @@ Options:
 
 $ ./waifu2x_ocl -s 1.0 nyanko.jpg
 $ ./waifu2x_ocl -m vgg_7/art_y/noise3_model.json nyanko.jpg
+$ ./waifu2x_ocl 001_200x.jpg 
+001_200x.jpg 200x199 3
+wsize:287136
+AMD Radeon HD 7800 Series (TAHITI / DRM 3.23.0 / 4.16.11-berry, LLVM 6.0.0) (platform 0, device 0)
+Maximum memory allocation size is 2254046412 bytes
+200 199 -> 416 414 *2.000000
+0 0
+159 0
+0 157
+159 157
 ```
 
 ## How to work
@@ -56,7 +66,7 @@ $ ./waifu2x_ocl -m vgg_7/art_y/noise3_model.json nyanko.jpg
 ![Normal](waifu_d.jpg)
 
 ### Waifu2x Resize
-- ./waifu2x_ocl -s 2.0 -m noise2_model.json waifu_s.jpg -o waifu_d.png
+- ./waifu2x_ocl -s 2.0 -m noise3_model.json waifu_s.jpg -o waifu_d.png
 ![Waifu2x](waifu_d.png)
 
 ## References
