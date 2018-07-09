@@ -8,6 +8,7 @@ Using OpenCL.
 - Linux with OpenCL
 - macOS with OpenCL
 - Windows with OpenCL
+  - [Intel SDK for OpenCL](https://software.intel.com/en-us/intel-opencl)
 
 ## How to build on macOS
 
@@ -35,7 +36,7 @@ Options:
 
 $ ./waifu2x_ocl -s 1.0 nyanko.jpg
 $ ./waifu2x_ocl -m vgg_7/art_y/noise3_model.json nyanko.jpg
-$ ./waifu2x_ocl 001_200x.jpg 
+$ ./waifu2x_ocl 001_200x.jpg
 001_200x.jpg 200x199 3
 wsize:287136
 AMD Radeon HD 7800 Series (TAHITI / DRM 3.23.0 / 4.16.11-berry, LLVM 6.0.0) (platform 0, device 0)

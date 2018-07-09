@@ -5,6 +5,7 @@
 //---------------------------------------------------------
 
 // clang -Os waifu2x_ocl.c -o waifu2x_ocl `pkg-config --libs --cflags OpenCL`
+#define _CRT_SECURE_NO_WARNINGS 1
 #include <stdlib.h>
 #include <stdint.h>
 
@@ -456,8 +457,7 @@ int waifu2x_ocl(char *name, char *output, char *model, float scale)
 	pix = pixels;
 
 	CatsEye cat;
-	int r = CatsEye_loadJson(&cat, model);
-	assert(!r);
+	assert(!CatsEye_loadJson(&cat, model));
 	cat.wdata = recalloc(cat.wdata, sizeof(real)*cat.wsize, sizeof(real)*KERNEL_W*KERNEL_H*4); // 256*281
 	cat.bdata = recalloc(cat.bdata, sizeof(real)*cat.bsize, sizeof(real)*(cat.bsize+3));
 
