@@ -9,6 +9,10 @@ Using OpenCL.
 - macOS with OpenCL
 - Windows with OpenCL
 
+## Download
+
+- You can download this program from [here](https://github.com/yui0/waifu2x-ocl/releases).
+
 ## How to build on macOS
 
 ```bash
