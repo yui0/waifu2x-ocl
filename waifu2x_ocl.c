@@ -142,7 +142,7 @@ int CatsEye_loadJson(CatsEye *this, char *name)
 
 char convolution[] = OCLSTRINGIFY(
 
-kernel void convolution(global float4 *X/*256*256*/, int swap, constant float4 *W/*3*3*/, int wpos, constant float4 *bias, int bpos, int INPUTPLANE/*/4*/)
+kernel void convolution(global float4 *X/*256*256*/, int swap, /*constant*/global const float4 *W/*3*3*/, int wpos, constant float4 *bias, int bpos, int INPUTPLANE/*/4*/)
 {
 	int gid = get_global_id(0) +get_global_id(1)*XSIZE; // 0 - (256*256-1)
 	int op = get_global_id(2); // output plane
@@ -158,11 +158,11 @@ kernel void convolution(global float4 *X/*256*256*/, int swap, constant float4 *
 	}
 	//Z[0] = gid/(256.0*256.0);
 
-	constant float4 *w = W +wpos +INPUTPLANE*3*3*4*op;
+	global const/*constant*/ float4 *w = W +wpos +INPUTPLANE*3*3*4*op;
 	if (INPUTPLANE==1) w = W +wpos +3*3*op;
-	constant float4 *w2 = w +INPUTPLANE*3*3;
-	constant float4 *w3 = w +INPUTPLANE*3*3*2;
-	constant float4 *w4 = w +INPUTPLANE*3*3*3;
+	global const/*constant*/ float4 *w2 = w +INPUTPLANE*3*3;
+	global const/*constant*/ float4 *w3 = w +INPUTPLANE*3*3*2;
+	global const/*constant*/ float4 *w4 = w +INPUTPLANE*3*3*3;
 	bias += bpos +op;
 
 	float4 p[9];
@@ -318,7 +318,8 @@ int ksz = sizeof(kernel)/sizeof(kernel[0]);
 
 void *recalloc(void *p, int s, int ss)
 {
-	void *r = calloc(ss, 1);
+	void *r = calloc(1, ss);
+//	printf("%x %x %d %d\n", r, p, s, ss);
 	if (!r) return 0;
 	memcpy(r, p, s);
 	free(p);
@@ -457,9 +458,12 @@ int waifu2x_ocl(char *name, char *output, char *model, float scale)
 	pix = pixels;
 
 	CatsEye cat;
-	assert(!CatsEye_loadJson(&cat, model));
+	int r = CatsEye_loadJson(&cat, model);
+	assert(!r);
 	cat.wdata = recalloc(cat.wdata, sizeof(real)*cat.wsize, sizeof(real)*KERNEL_W*KERNEL_H*4); // 256*281
 	cat.bdata = recalloc(cat.bdata, sizeof(real)*cat.bsize, sizeof(real)*(cat.bsize+3));
+	assert(cat.wdata);
+	assert(cat.bdata);
 
 	args[2].size = sizeof(real)*KERNEL_W*KERNEL_H*4;
 	args[2].s = cat.wdata;
