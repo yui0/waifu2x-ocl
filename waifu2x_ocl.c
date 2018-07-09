@@ -9,8 +9,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-//#define DEBUG
-#ifdef DEBUG
+//#define _DEBUG
+#ifdef _DEBUG
 #define debug_s(x)	{x;}
 #else
 #define debug_s(x)
@@ -329,7 +329,7 @@ void result(char *name, int w, int h)
 {
 	oclKernelArgsRead(args);
 	float *d = !swap ? X : X +DATA_XSIZE*DATA_YSIZE*4;
-#ifdef DEBUG
+#ifdef _DEBUG
 	for (int i=0; i<8/*h*/; i++) {
 //		for (int j=0; j<8/*w*/; j++) printf("%2.3f ", d[(i*w+j)*4]);
 		for (int j=0; j<8/*w*/; j++) printf("%2.3f ", d[(i*/*w*/256+j)*4]);
@@ -396,7 +396,7 @@ void waifu2x_ocl_run(CatsEye *cat, float *yuv, uint8_t *s, int sx, int sy, uint8
 
 		oclRun(&kernel[0]);
 		swap ^= 1;
-#ifdef DEBUG
+#ifdef _DEBUG
 		char buff[256];
 		sprintf(buff, "output2x_%02d.png", i+1);
 		result(buff, XSIZE*w, YSIZE*h);
@@ -470,7 +470,7 @@ int waifu2x_ocl(char *name, char *output, char *model, float scale)
 	oclKernel(kernel, ksz, "-cl-denorms-are-zero -cl-finite-math-only -cl-fast-relaxed-math -Werror", convolution);
 	oclKernelArgs(kernel, ksz);
 
-//#ifndef DEBUG
+//#ifndef _DEBUG
 //	args[0].size = sizeof(float)*4*256*256; // for speed up
 //#endif
 

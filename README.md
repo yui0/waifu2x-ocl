@@ -8,7 +8,6 @@ Using OpenCL.
 - Linux with OpenCL
 - macOS with OpenCL
 - Windows with OpenCL
-  - [Intel SDK for OpenCL](https://software.intel.com/en-us/intel-opencl)
 
 ## How to build on macOS
 
@@ -28,6 +27,7 @@ $ make
 
 - nVidia: https://developer.nvidia.com/cuda-downloads
 - AMD: http://developer.amd.com/tools/hc/AMDAPPSDK/downloads/Pages/default.aspx
+- Intel: [Intel SDK for OpenCL](https://software.intel.com/en-us/intel-opencl)
 
 2. Including OpenCL in the Project
 
