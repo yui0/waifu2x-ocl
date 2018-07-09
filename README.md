@@ -22,6 +22,31 @@ $ make
 $ make
 ```
 
+## How to build on Windows
+
+1. Installing OpenCL
+
+- nVidia: https://developer.nvidia.com/cuda-downloads
+- AMD: http://developer.amd.com/tools/hc/AMDAPPSDK/downloads/Pages/default.aspx
+
+2. Including OpenCL in the Project
+
+-  In the ‘Additional Include Directories’ field in ‘VC++ Directories’ add the following information depending on your graphics card.
+  - nVidia: - “$(CUDA_INC_PATH)”
+  - AMD: - “$(AMDAPPSDKROOT)\include”
+  - Intel: - “C:\Intel\OpenCL\sdk\include”
+
+3. Linking OpenCL
+
+- Choose ‘Linker-> General’.
+- In  the ‘Additional Dependencies’ field enter the following, again this is based on your card vendor.
+  - nVidia: - “$(CUDA_LIB_PATH)”
+  - AMD: - “$(AMDAPPSDKROOT)\lib\x86” (for 64 bit users you may need to change the x86 to x86_64)
+  - Intel: - “C:\Intel\OpenCL\sdk\lib\x86” (for 64 bit users you may need to change the x86 to x64)
+- Still in the ‘Linker’ submenu, select ‘Input’.
+- In the ‘Additional Dependencies’ field click on the arrow that appears at the end of the field and choose Edit…
+- In the dialog that appears enter “OpenCL.lib”
+
 ## How to use
 
 ```bash
