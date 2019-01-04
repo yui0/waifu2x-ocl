@@ -43,7 +43,7 @@ $ make
 3. Linking OpenCL
 
 - Choose ‘Linker-> General’.
-- In  the ‘Additional Dependencies’ field enter the following, again this is based on your card vendor.
+- In the ‘Additional Dependencies’ field enter the following, again this is based on your card vendor.
   - nVidia: - “$(CUDA_LIB_PATH)”
   - AMD: - “$(AMDAPPSDKROOT)\lib\x86” (for 64 bit users you may need to change the x86 to x86_64)
   - Intel: - “C:\Intel\OpenCL\sdk\lib\x86” (for 64 bit users you may need to change the x86 to x64)
