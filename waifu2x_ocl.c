@@ -138,7 +138,9 @@ int CatsEye_loadJson(CatsEye *this, char *name)
 #define DATA_XSIZE	4096
 #define DATA_YSIZE	2048
 #define KERNEL_W	256
-#define KERNEL_H	281	// 287136/4/256
+//#define KERNEL_H	281	// weight(YUV): 287136/4/256
+//#define KERNEL_H	284	// weight(RGB): 290016/4/256
+#define KERNEL_H	2048	// weight(RGB): 290016/4/256
 
 char convolution[] = OCLSTRINGIFY(
 
@@ -365,12 +367,21 @@ void waifu2x_ocl_run(CatsEye *cat, float *yuv, uint8_t *s, int sx, int sy, uint8
 			uint8_t g = s[(y*sx+x)*3+1];
 			uint8_t b = s[(y*sx+x)*3+2];
 
-			yuv[(y*256+x)*4] = (0.298912*r +0.586611*g +0.114478*b)/256.0;	// CCIR Rec.601
-			u[y*256+x] = -0.1687*r -0.3313*g +0.500 *b;
-			v[y*256+x] =  0.500 *r -0.4187*g -0.0813*b;
-//			yuv[(y*256+x)*4] = 0.299*r +0.587*g +0.114*b;	// CCIR Rec.601
-//			u[y*256+x] = -0.147*r -0.289*g +0.436*b;
-//			v[y*256+x] = 0.615*r -0.515*g -0.100*b;
+			if (cat->u[0].in==1) { // yuv mode
+#if 1
+				yuv[(y*256+x)*4] = (0.298912*r +0.586611*g +0.114478*b)/256.0;	// CCIR Rec.601
+				u[y*256+x] = -0.1687*r -0.3313*g +0.500 *b;
+				v[y*256+x] =  0.500 *r -0.4187*g -0.0813*b;
+#else
+				yuv[(y*256+x)*4] = 0.299*r +0.587*g +0.114*b;	// CCIR Rec.601
+				u[y*256+x] = -0.147*r -0.289*g +0.436*b;
+				v[y*256+x] = 0.615*r -0.515*g -0.100*b;
+#endif
+			} else { // rgb mode
+				yuv[(y*256+x)*4] = r/256.0;
+				yuv[(y*256+x)*4+1] = g/256.0;
+				yuv[(y*256+x)*4+2] = b/256.0;
+			}
 
 			X[(y*256+x)*4  ] = yuv[(y*256+x)*4];
 			X[(y*256+x)*4+1] = yuv[(y*256+x)*4];
@@ -411,21 +422,37 @@ void waifu2x_ocl_run(CatsEye *cat, float *yuv, uint8_t *s, int sx, int sy, uint8
 		for (int x=8; x<XSIZE-8; x++) {
 	//for (int y=0; y<YSIZE; y++) {
 		//for (int x=0; x<XSIZE; x++) {
-//			float yy = yuv[(y*256+x)*4];
-			float yy = d[(y*256+x)*4]*256.0;
-			int r = yy                     +1.402  *v[y*256+x];
-			int g = yy -0.34414*u[y*256+x] -0.71414*v[y*256+x];
-			int b = yy +1.772  *u[y*256+x];
-			uint8_t *pix = &p[(y*wx+x)*3];
-			if (!pix[0] || !pix[1] || !pix[2]) {
-				pix[0] = r>255 ? 255 : r<0 ? 0 : r;
-				pix[1] = g>255 ? 255 : g<0 ? 0 : g;
-				pix[2] = b>255 ? 255 : b<0 ? 0 : b;
-			}
+			if (cat->u[0].in==1) { // yuv mode
+//				float yy = yuv[(y*256+x)*4];
+				float yy = d[(y*256+x)*4]*256.0;
+				int r = yy                     +1.402  *v[y*256+x];
+				int g = yy -0.34414*u[y*256+x] -0.71414*v[y*256+x];
+				int b = yy +1.772  *u[y*256+x];
+				uint8_t *pix = &p[(y*wx+x)*3];
+				if (!pix[0] || !pix[1] || !pix[2]) {
+					pix[0] = r>255 ? 255 : r<0 ? 0 : r;
+					pix[1] = g>255 ? 255 : g<0 ? 0 : g;
+					pix[2] = b>255 ? 255 : b<0 ? 0 : b;
+				}
 
-//			p[(y*XSIZE+x)*3]   = 256*(yy                   +1.140*v[y*256+x]);
-//			p[(y*XSIZE+x)*3+1] = 256*(yy -0.395*u[y*256+x] -0.580*v[y*256+x]);
-//			p[(y*XSIZE+x)*3+2] = 256*(yy +2.032*u[y*256+x]);
+//				p[(y*XSIZE+x)*3]   = 256*(yy                   +1.140*v[y*256+x]);
+//				p[(y*XSIZE+x)*3+1] = 256*(yy -0.395*u[y*256+x] -0.580*v[y*256+x]);
+//				p[(y*XSIZE+x)*3+2] = 256*(yy +2.032*u[y*256+x]);
+			} else { // rgb mode
+				int r = d[(y*256+x)*4]*256.0;
+				int g = d[(y*256+x)*4+1]*256.0;
+				int b = d[(y*256+x)*4+2]*256.0;
+				/*p[(y*wx+x)*3] = r;
+				p[(y*wx+x)*3+1] = g;
+				p[(y*wx+x)*3+2] = b;*/
+				uint8_t *pix = &p[(y*wx+x)*3];
+				if (!pix[0] || !pix[1] || !pix[2]) {
+					pix[0] = r>255 ? 255 : r<0 ? 0 : r;
+					pix[1] = g>255 ? 255 : g<0 ? 0 : g;
+					pix[2] = b>255 ? 255 : b<0 ? 0 : b;
+				}
+
+			}
 		}
 	}
 }
